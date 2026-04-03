@@ -39,8 +39,7 @@ _DEFAULT_CHUNK_SIZE = 25
 
 _NSF_API_URL_TEMPLATE = (
     "https://api.nsf.gov/services/v1/awards.json?"
-    "&printFields={metadata_fields}"
-    "&projectOutcomesOnly={require_project_outcomes_reports}"
+    "printFields={metadata_fields}"
     "&offset={offset}"
 )
 
@@ -101,9 +100,12 @@ class NSF(DataSource):
         metadata_fields = ",".join(_DEFAULT_METADATA_SET)
         api_str = _NSF_API_URL_TEMPLATE.format(
             metadata_fields=metadata_fields,
-            require_project_outcomes_reports=require_project_outcomes_reports,
             offset=offset,
         )
+
+        # Only include projectOutcomesOnly when true
+        if require_project_outcomes_reports:
+            api_str += "&projectOutcomesOnly=true"
 
         # Handle optional parameters
         if from_datetime:
@@ -129,8 +131,12 @@ class NSF(DataSource):
         # Create column of first and last name combined
         df[DatasetFields.pi] = df["piFirstName"] + " " + df["piLastName"]
 
-        # Drop piFirstName and piLastName columns
-        df = df.drop(columns=["piFirstName", "piLastName"])
+        # Drop columns that would conflict with renames
+        # NSF API now returns all fields regardless of printFields
+        drop_cols = ["piFirstName", "piLastName"]
+        if "program" in df.columns:
+            drop_cols.append("program")
+        df = df.drop(columns=drop_cols)
 
         # Format all dates as date iso format
         df["startDate"] = df["startDate"].apply(

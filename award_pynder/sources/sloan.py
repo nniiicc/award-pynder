@@ -6,8 +6,8 @@ import logging
 import time
 from datetime import datetime
 
+import cloudscraper
 import pandas as pd
-import requests
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
@@ -79,8 +79,9 @@ class Sloan(DataSource):
                 limit=1,
             )
 
-            # Make the request
-            resp = requests.get(query_url)
+            # Make the request (cloudscraper handles Cloudflare)
+            scraper = cloudscraper.create_scraper()
+            resp = scraper.get(query_url)
 
             # Parse HTML for td with "results-count" class
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -110,8 +111,9 @@ class Sloan(DataSource):
         )
 
         try:
-            # Make the request
-            resp = requests.get(query_url)
+            # Make the request (cloudscraper handles Cloudflare)
+            scraper = cloudscraper.create_scraper()
+            resp = scraper.get(query_url)
 
             # Convert to soup
             soup = BeautifulSoup(resp.text, "html.parser")

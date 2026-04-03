@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 ###############################################################################
 
 
-_TEMPLETON_QUERY_API_URL = "https://www.templeton.org/?" "limit={limit}"
+_TEMPLETON_QUERY_API_URL = "https://www.templeton.org/?limit={limit}"
 _DEFAULT_CHUNK_SIZE = 500
 
 _TEMPLETON_BULK_API_URL = "https://www.templeton.org/grants/grant-database"
@@ -80,6 +80,7 @@ class Templeton(DataSource):
         from_datetime: str | datetime | None = None,
         to_datetime: str | datetime | None = None,
         raise_on_error: bool = True,
+        tqdm_kwargs: dict | None = None,
     ) -> pd.DataFrame:
         """
         Get data from the Templeton Foundation.
@@ -94,6 +95,8 @@ class Templeton(DataSource):
             The end date for the search.
         raise_on_error : bool, optional
             Whether to raise an error if the request fails.
+        tqdm_kwargs : dict, optional
+            Keyword arguments to pass to tqdm.
 
         Returns
         -------
@@ -137,10 +140,18 @@ class Templeton(DataSource):
             # Subset the dataframe to only links that we have from before
             df = df[df["link"].isin(relevant_link_urls)]
 
-            return Templeton._format_dataframe(
-                df,
-                query=query,
-            )
+            # Format to standard columns
+            df = Templeton._format_dataframe(df, query=query)
+
+            # Filter out data that isn't in datetime range
+            if from_datetime:
+                from_dt = Templeton._parse_datetime(from_datetime)
+                df = df[df[DatasetFields.year] >= from_dt.year]
+            if to_datetime:
+                to_dt = Templeton._parse_datetime(to_datetime)
+                df = df[df[DatasetFields.year] <= to_dt.year]
+
+            return df
 
         except Exception as e:
             # Handle raise on error or ignore
@@ -152,14 +163,4 @@ class Templeton(DataSource):
                 f"'raise_on_error' is False, ignoring..."
             )
 
-        # Filter out data that isn't in datetime range
-        if from_datetime:
-            # First parse the datetime
-            from_dt = Templeton._parse_datetime(from_datetime)
-            df = df[df[DatasetFields.year] >= from_dt.year]
-        if to_datetime:
-            # First parse the datetime
-            to_dt = Templeton._parse_datetime(to_datetime)
-            df = df[df[DatasetFields.year] <= to_dt.year]
-
-        return df
+        return pd.DataFrame(columns=ALL_DATASET_FIELDS)

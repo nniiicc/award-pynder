@@ -14,37 +14,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Check linting, formating, types, etc.
   lint:
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"
-    - uses: extractions/setup-just@v1
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip wheel
-        pip install pre-commit
-    - name: Lint
-      run: just lint
-  
-  # Run tests
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Lint
+        run: uvx ruff check award_pynder/
+      - name: Format check
+        run: uvx ruff format --check award_pynder/
+
   test:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"
-    - uses: extractions/setup-just@v1
-    - name: Install Dependencies
-      run: |
-        pip install .[test]
-    - name: Test
-      run: just test
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --extra test
+      - name: Test
+        run: uv run pytest -v
