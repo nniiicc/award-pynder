@@ -20,15 +20,24 @@ clean:
 
 # install with all deps
 install:
-    pip install -e ".[dev,lint,test]"
+    uv sync --extra dev --extra lint --extra test
 
-# lint, format, and check all files
+# lint and format check
 lint:
-	pre-commit run --all-files
+	uvx ruff check award_pynder/
+	uvx ruff format --check award_pynder/
 
 # run all tests
 test:
-	pytest
+	uv run pytest -v
+
+# full package check (Python equivalent of R CMD check)
+check:
+	uv build
+	uvx twine check dist/*
+	uvx ruff check award_pynder/
+	uvx ruff format --check award_pynder/
+	uv run pytest -v
 
 ###############################################################################
 # Release and versioning
