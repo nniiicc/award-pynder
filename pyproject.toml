@@ -47,7 +47,7 @@ Documentation = "https://si2-urssi.github.io/award-pynder"
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 test = [
-  "pytest>=8,<9",
+  "pytest>=8,<10",
 ]
 lint = [
   "pre-commit>=2.20.0",
